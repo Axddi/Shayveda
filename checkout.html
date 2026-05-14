@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Checkout | Shayveda</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand-mark" href="index.html"><span class="leaf-dot"></span><span>Shayveda</span></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="index.html#products">Products</a>
+        <a href="tracking.html">Track</a>
+      </nav>
+    </header>
+
+    <main class="checkout-layout">
+      <section class="checkout-panel">
+        <p class="eyebrow">Secure checkout</p>
+        <h1>Delivery details before PayU payment</h1>
+        <form id="checkoutForm" class="checkout-form">
+          <label>
+            Product
+            <select id="productSelect" name="product">
+              <option value="aloe">99% Aloe Vera Soothing Gel - Rs. 249</option>
+              <option value="beetroot">Beetroot Superfood Powder - Rs. 299</option>
+            </select>
+          </label>
+          <label>
+            Quantity
+            <input id="quantityInput" type="number" name="quantity" min="1" max="10" value="1">
+          </label>
+          <label>
+            Full name
+            <input type="text" name="name" placeholder="Your name" required>
+          </label>
+          <label>
+            Email address
+            <input type="email" name="email" placeholder="you@example.com" required>
+          </label>
+          <label>
+            Phone number
+            <input type="tel" name="phone" placeholder="9876543210" pattern="[0-9+\-\s]{10,16}" required>
+          </label>
+          <label>
+            Alternate phone
+            <input type="tel" name="alternatePhone" placeholder="Optional">
+          </label>
+          <label class="wide-field">
+            Address line 1
+            <input type="text" name="address1" placeholder="House / flat no., building, street" required>
+          </label>
+          <label class="wide-field">
+            Address line 2
+            <input type="text" name="address2" placeholder="Area, landmark, nearby location">
+          </label>
+          <label>
+            Pincode
+            <input type="text" name="pincode" placeholder="560001" pattern="[0-9]{6}" inputmode="numeric" required>
+          </label>
+          <label>
+            City
+            <input type="text" name="city" placeholder="City" required>
+          </label>
+          <label>
+            State
+            <input type="text" name="state" placeholder="State" required>
+          </label>
+          <label>
+            Payment method
+            <select name="paymentMethod" required>
+              <option value="payu">PayU staging payment link</option>
+            </select>
+          </label>
+          <label class="wide-field">
+            Order notes
+            <textarea name="notes" rows="3" placeholder="Any delivery instruction, gift note, or preferred time"></textarea>
+          </label>
+          <div class="checkout-status" id="checkoutStatus" aria-live="polite"></div>
+          <button class="button primary full" type="submit">Save order and pay with PayU</button>
+        </form>
+      </section>
+
+      <aside class="summary-panel">
+        <div class="summary-visual" data-tilt>
+          <div id="summaryProduct" class="product-3d image-product aloe-product">
+            <img src="alo.png" alt="Shayveda 99% Aloe Vera Soothing Gel">
+          </div>
+        </div>
+        <h2>Order summary</h2>
+        <div class="summary-line"><span>Subtotal</span><strong id="subtotal">Rs. 249</strong></div>
+        <div class="summary-line"><span>Shiprocket delivery</span><strong>Rs. 55</strong></div>
+        <div class="summary-line total"><span>Total</span><strong id="total">Rs. 304</strong></div>
+        <div class="order-id-card">
+          <span>Next order ID</span>
+          <strong id="nextOrderId">SHY-000000</strong>
+        </div>
+        <p>
+          Your order details are saved in this browser before PayU opens. For production,
+          connect the same fields to a backend database before redirecting to payment.
+        </p>
+      </aside>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
