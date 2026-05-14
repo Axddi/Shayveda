@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Track Delivery | Shayveda</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand-mark" href="index.html"><span class="leaf-dot"></span><span>Shayveda</span></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="index.html#products">Products</a>
+        <a href="checkout.html">Checkout</a>
+      </nav>
+    </header>
+
+    <main class="tracking-page">
+      <section class="tracking-hero">
+        <div>
+          <p class="eyebrow">Track your orders</p>
+          <h1>We deliver our natural goodness to whole India.</h1>
+          <p>
+            Enter your order ID or AWB number to see the real-time status of your delivery. We partner with trusted couriers to ensure your Shayveda products reach you fresh and on time, no matter where you are in India.
+          </p>
+        </div>
+        <form class="tracking-form" id="trackingForm">
+          <label>
+            Order ID or AWB
+            <input id="trackingInput" type="text" placeholder="SHY-1042" required>
+          </label>
+          <button class="button primary full" type="submit">Track order</button>
+        </form>
+      </section>
+
+      <section class="timeline" id="timeline" aria-live="polite">
+        <article class="timeline-step active">
+          <span></span>
+          <div><strong>Order placed</strong><small>Payment received</small></div>
+        </article>
+        <article class="timeline-step active">
+          <span></span>
+          <div><strong>Packed by Shayveda</strong><small>Quality check complete</small></div>
+        </article>
+        <article class="timeline-step">
+          <span></span>
+          <div><strong>Picked by Shiprocket courier</strong><small>AWB will appear here</small></div>
+        </article>
+        <article class="timeline-step">
+          <span></span>
+          <div><strong>Out for delivery</strong><small>SMS update to customer</small></div>
+        </article>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
