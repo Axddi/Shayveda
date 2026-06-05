@@ -1,3 +1,6 @@
+(function () {
+  try {
+
 const products = {
   aloe: {
     name: "99% Aloe Vera Soothing Gel",
@@ -101,6 +104,11 @@ function money(amount) {
 
   return `Rs. ${amount.toLocaleString("en-IN")}`;
 }
+  } catch (err) {
+    // Log any runtime error so it can be diagnosed without breaking the page
+    console.error("Frontend script error:", err);
+  }
+})();
 
 function getCart() {
 

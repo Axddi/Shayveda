@@ -1,4 +1,5 @@
 (function () {
+  try {
 // Use runtime-provided API base (set by hosting) or fall back to same-origin
 // relative path. This makes the frontend work on Vercel where backend may be
 // hosted separately; you can set window.__API_BASE__ at runtime if needed.
@@ -372,4 +373,7 @@ checkoutForm.addEventListener(
     }
   }
 );
+  } catch (err) {
+    console.error("Checkout script error:", err);
+  }
 })();
