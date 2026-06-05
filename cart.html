@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cart | Shayveda</title>
+
+    <link rel="stylesheet" href="styles.css">
+
+    <style>
+      .cart-page {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 28px 0 80px;
+      }
+
+      .cart-layout {
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        gap: 24px;
+        margin-top: 32px;
+      }
+
+      .cart-items,
+      .cart-summary {
+        border: 1px solid rgba(255,255,255,0.75);
+        border-radius: 28px;
+        background: rgba(255,255,255,0.68);
+        box-shadow: var(--shadow);
+      }
+
+      .cart-items {
+        padding: 24px;
+      }
+
+      .cart-summary {
+        padding: 28px;
+        height: fit-content;
+        position: sticky;
+        top: 110px;
+      }
+
+      .cart-item {
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        gap: 24px;
+        padding: 22px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .cart-item:last-child {
+        border-bottom: none;
+      }
+
+      .cart-item-visual {
+        display: grid;
+        place-items: center;
+        min-height: 180px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #dff8cf, #fff);
+        overflow: hidden;
+      }
+
+      .cart-item-visual.beet {
+        background: linear-gradient(135deg, #240b14, #fff2f6);
+      }
+
+      .cart-item-visual .image-product {
+        width: 120px;
+        height: 160px;
+      }
+
+      .cart-item-visual .beetroot-product {
+        width: 140px;
+        height: 140px;
+      }
+
+      .cart-item-details h2 {
+        margin: 0;
+        font-size: 1.5rem;
+      }
+
+      .cart-item-details p {
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .cart-price {
+        margin-top: 12px;
+        font-size: 1.4rem;
+        font-weight: 900;
+      }
+
+      .quantity-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 20px;
+      }
+
+      .quantity-row button {
+        width: 42px;
+        height: 42px;
+        border: none;
+        border-radius: 12px;
+        background: #17211b;
+        color: white;
+        font-size: 1.1rem;
+        cursor: pointer;
+      }
+
+      .quantity-row span {
+        min-width: 30px;
+        text-align: center;
+        font-weight: 800;
+      }
+
+      .remove-button {
+        margin-top: 18px;
+        border: none;
+        background: transparent;
+        color: #c11c4f;
+        font-weight: 800;
+        cursor: pointer;
+        padding: 0;
+      }
+
+      .summary-line {
+        display: flex;
+        justify-content: space-between;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .summary-total {
+        font-size: 1.35rem;
+        font-weight: 900;
+        border-bottom: none;
+      }
+
+      .empty-cart {
+        text-align: center;
+        padding: 80px 20px;
+      }
+
+      .empty-cart h2 {
+        font-size: 2rem;
+        margin-bottom: 14px;
+      }
+
+      .empty-cart p {
+        color: var(--muted);
+        margin-bottom: 26px;
+      }
+
+      @media (max-width: 900px) {
+
+        .cart-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .cart-summary {
+          position: static;
+        }
+      }
+
+      @media (max-width: 620px) {
+
+        .cart-item {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+
+    <header class="site-header">
+      <a class="brand-mark" href="index.html">
+        <span class="leaf-dot"></span>
+        <span>Shayveda</span>
+      </a>
+
+      <nav class="nav-links">
+        <a href="index.html#products">Products</a>
+        <a href="tracking.html">Track</a>
+        <a href="checkout.html">Checkout</a>
+      </nav>
+    </header>
+
+    <main class="cart-page">
+
+      <p class="eyebrow">Your shopping bag</p>
+
+      <h1>Your Cart</h1>
+
+      <div id="cartContainer"></div>
+
+    </main>
+
+    <script src="script.js"></script>
+
+    <script>
+
+      function renderCart() {
+
+        const container = document.querySelector("#cartContainer");
+
+        const cart = getCart();
+
+        if (cart.length === 0) {
+
+          container.innerHTML = `
+            <div class="cart-items empty-cart">
+              <h2>Your cart is empty</h2>
+
+              <p>
+                Add some botanical goodness to begin your wellness journey.
+              </p>
+
+              <a class="button primary" href="index.html#products">
+                Explore Products
+              </a>
+            </div>
+          `;
+
+          return;
+        }
+
+        let subtotal = 0;
+
+        let itemsHTML = "";
+
+        cart.forEach(item => {
+
+          const product = products[item.id];
+
+          const itemTotal = product.price * item.quantity;
+
+          subtotal += itemTotal;
+
+          itemsHTML += `
+            <article class="cart-item">
+
+              <div class="cart-item-visual ${product.color}">
+
+                <div class="product-3d image-product ${product.visual}">
+                  <img src="${product.image}" alt="${product.alt}">
+                </div>
+
+              </div>
+
+              <div class="cart-item-details">
+
+                <p class="eyebrow">
+                  SHAYVEDA NATURALS
+                </p>
+
+                <h2>${product.name}</h2>
+
+                <div class="cart-price">
+                  Rs. ${product.price}
+                </div>
+
+                <div class="quantity-row">
+
+                  <button onclick="changeQuantity('${item.id}', -1)">
+                    -
+                  </button>
+
+                  <span>${item.quantity}</span>
+
+                  <button onclick="changeQuantity('${item.id}', 1)">
+                    +
+                  </button>
+
+                </div>
+
+                <button
+                  class="remove-button"
+                  onclick="removeFromCart('${item.id}')"
+                >
+                  Remove item
+                </button>
+
+              </div>
+
+            </article>
+          `;
+        });
+
+        const shipping = subtotal > 499 ? 0 : 55;
+
+        const total = subtotal + shipping;
+
+        container.innerHTML = `
+          <div class="cart-layout">
+
+            <section class="cart-items">
+
+              ${itemsHTML}
+
+            </section>
+
+            <aside class="cart-summary">
+
+              <p class="eyebrow">
+                ORDER SUMMARY
+              </p>
+
+              <div class="summary-line">
+                <span>Subtotal</span>
+                <strong>Rs. ${subtotal}</strong>
+              </div>
+
+              <div class="summary-line">
+                <span>Shipping</span>
+                <strong>
+                  ${shipping === 0 ? "FREE" : `Rs. ${shipping}`}
+                </strong>
+              </div>
+
+              <div class="summary-line summary-total">
+                <span>Total</span>
+                <strong>Rs. ${total}</strong>
+              </div>
+
+              <a
+                class="button primary full"
+                href="checkout.html"
+                style="margin-top:24px;"
+              >
+                Proceed to Checkout
+              </a>
+
+            </aside>
+
+          </div>
+        `;
+      }
+
+      function changeQuantity(productId, change) {
+
+        const cart = getCart();
+
+        const item = cart.find(item => item.id === productId);
+
+        if (!item) return;
+
+        item.quantity += change;
+
+        if (item.quantity <= 0) {
+
+          removeFromCart(productId);
+
+          return;
+        }
+
+        saveCart(cart);
+
+        updateCartCount();
+
+        renderCart();
+      }
+
+      function removeFromCart(productId) {
+
+        let cart = getCart();
+
+        cart = cart.filter(item => item.id !== productId);
+
+        saveCart(cart);
+
+        updateCartCount();
+
+        renderCart();
+      }
+
+      renderCart();
+
+    </script>
+
+  </body>
+</html>

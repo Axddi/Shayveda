@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  phone     String?
+  password  String
+  createdAt DateTime @default(now())
+
+  cartItems CartItem[]
+  addresses Address[]
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String   @unique
+  description String   @db.Text
+  price       Float
+  stock       Int
+  imageUrl    String
+  category    String
+  createdAt   DateTime @default(now())
+
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+}
+
+model CartItem {
+  id       Int @id @default(autoincrement())
+  quantity Int
+
+  userId    Int
+  productId Int
+
+  user    User    @relation(fields: [userId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id          Int     @id @default(autoincrement())
+  orderNumber String? @unique
+
+  customerName String
+  phone        String
+  email        String?
+  addressLine  String
+  city         String
+  state        String
+  pincode      String
+
+  totalAmount    Float
+  discountAmount Float @default(0)
+  deliveryCharge Float @default(55)
+  finalAmount    Float
+
+  paymentMethod String
+  paymentStatus String @default("PENDING")
+  orderStatus   String @default("PLACED")
+
+  // Razorpay metadata
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  razorpaySignature String?
+
+  // Shiprocket metadata
+  shiprocketOrderId     String?
+  shiprocketShipmentId  String?
+  shiprocketAwbCode     String?
+  shiprocketCourierName String?
+  shiprocketStatus      String?
+  shiprocketTrackingUrl String?
+
+  createdAt DateTime @default(now())
+
+  orderItems OrderItem[]
+}
+
+model OrderItem {
+  id Int @id @default(autoincrement())
+
+  quantity Int
+  price    Float
+
+  orderId   Int
+  productId Int
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Address {
+  id          Int    @id @default(autoincrement())
+  fullName    String
+  phone       String
+  addressLine String
+  city        String
+  state       String
+  pincode     String
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+}

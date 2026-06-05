@@ -15,7 +15,9 @@
       <nav class="nav-links" aria-label="Main navigation">
         <a href="#products">Products</a>
         <a href="tracking.html">Track</a>
-        <a href="checkout.html">Checkout</a>
+        <a href="cart.html">
+          Cart (<span id="cartCount">0</span>)
+        </a>
       </nav>
     </header>
 
@@ -79,6 +81,12 @@
               <div class="price-row">
                 <span>Rs. 110</span>
                 <a class="button compact" href="product-aloe.html">View product</a>
+                <button
+                  class="button compact"
+                  onclick="addToCart('aloe')"
+                >
+                  Add to Cart
+                </button>
               </div>
             </div>
           </article>
@@ -96,6 +104,12 @@
               <div class="price-row">
                 <span>Rs. 399</span>
                 <a class="button compact" href="product-beetroot.html">View product</a>
+                <button
+                  class="button compact beet-button"
+                  onclick="addToCart('beetroot')"
+                >
+                  Add to Cart
+                </button>
               </div>
             </div>
           </article>

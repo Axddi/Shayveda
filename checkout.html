@@ -1,110 +1,347 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Checkout | Shayveda</title>
-    <link rel="stylesheet" href="styles.css">
-  </head>
-  <body>
-    <header class="site-header">
-      <a class="brand-mark" href="index.html"><span class="leaf-dot"></span><span>Shayveda</span></a>
-      <nav class="nav-links" aria-label="Main navigation">
-        <a href="index.html#products">Products</a>
-        <a href="tracking.html">Track</a>
-      </nav>
-    </header>
+<head>
+  <meta charset="utf-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
 
-    <main class="checkout-layout">
-      <section class="checkout-panel">
-        <p class="eyebrow">Secure checkout</p>
-        <h1>Delivery details and payment choice</h1>
-        <form id="checkoutForm" class="checkout-form">
-          <label>
-            Product
-            <select id="productSelect" name="product">
-              <option value="aloe">99% Aloe Vera Soothing Gel - Rs. 110</option>
-              <option value="beetroot">Beetroot Superfood Powder - Rs. 399</option>
-            </select>
-          </label>
-          <label>
-            Quantity
-            <input id="quantityInput" type="number" name="quantity" min="1" max="10" value="1">
-          </label>
-          <label>
-            Full name
-            <input type="text" name="name" placeholder="Your name" required>
-          </label>
-          <label>
-            Email address
-            <input type="email" name="email" placeholder="you@example.com" required>
-          </label>
-          <label>
-            Phone number
-            <input type="tel" name="phone" placeholder="9876543210" pattern="[0-9+\-\s]{10,16}" required>
-          </label>
-          <label>
-            Alternate phone
-            <input type="tel" name="alternatePhone" placeholder="Optional">
-          </label>
-          <label class="wide-field">
-            Address line 1
-            <input type="text" name="address1" placeholder="House / flat no., building, street" required>
-          </label>
-          <label class="wide-field">
-            Address line 2
-            <input type="text" name="address2" placeholder="Area, landmark, nearby location">
-          </label>
-          <label>
-            Pincode
-            <input type="text" name="pincode" placeholder="560001" pattern="[0-9]{6}" inputmode="numeric" required>
-          </label>
-          <label>
-            City
-            <input type="text" name="city" placeholder="City" required>
-          </label>
-          <label>
-            State
-            <input type="text" name="state" placeholder="State" required>
-          </label>
-          <label>
-            Payment method
-            <select id="paymentMethod" name="paymentMethod" required>
-              <option value="payu">Prepaid online - 20% off</option>
-              <option value="cod">Cash on delivery - 10% off</option>
-            </select>
-          </label>
-          <label class="wide-field">
-            Order notes
-            <textarea name="notes" rows="3" placeholder="Any delivery instruction, gift note, or preferred time"></textarea>
-          </label>
-          <div class="checkout-status" id="checkoutStatus" aria-live="polite"></div>
-          <button class="button primary full" id="checkoutSubmit" type="submit">Save order and pay with PayU</button>
-        </form>
-      </section>
+  <title>Checkout | Shayveda</title>
 
-      <aside class="summary-panel">
-        <div class="summary-visual" data-tilt>
-          <div id="summaryProduct" class="product-3d image-product aloe-product">
-            <img src="alo.png" alt="Shayveda 99% Aloe Vera Soothing Gel">
-          </div>
+  <link
+    rel="stylesheet"
+    href="styles.css"
+  >
+</head>
+
+<body>
+
+  <header class="site-header">
+
+    <a
+      class="brand-mark"
+      href="index.html"
+    >
+      <span class="leaf-dot"></span>
+      <span>Shayveda</span>
+    </a>
+
+    <nav
+      class="nav-links"
+      aria-label="Main navigation"
+    >
+      <a href="index.html#products">
+        Products
+      </a>
+
+      <a href="tracking.html">
+        Track
+      </a>
+    </nav>
+
+  </header>
+
+
+  <main class="checkout-layout">
+
+    <!-- CHECKOUT FORM -->
+    <section class="checkout-panel">
+
+      <p class="eyebrow">
+        Secure checkout
+      </p>
+
+      <h1>
+        Delivery details and payment choice
+      </h1>
+
+
+      <form
+        id="checkoutForm"
+        class="checkout-form"
+      >
+
+        <!-- NAME -->
+        <label>
+          Full name
+
+          <input
+            type="text"
+            id="name"
+            placeholder="Your name"
+            required
+          >
+        </label>
+
+
+        <!-- EMAIL -->
+        <label>
+          Email address
+
+          <input
+            type="email"
+            id="email"
+            placeholder="you@example.com"
+            required
+          >
+        </label>
+
+
+        <!-- PHONE -->
+        <label>
+          Phone number
+
+          <input
+            type="tel"
+            id="phone"
+            placeholder="9876543210"
+            pattern="[0-9+\-\s]{10,16}"
+            required
+          >
+        </label>
+
+
+        <!-- ADDRESS -->
+        <label class="wide-field">
+
+          Address
+
+          <input
+            type="text"
+            id="address"
+            placeholder="House / flat / street / landmark"
+            required
+          >
+        </label>
+
+
+        <!-- PINCODE -->
+        <label>
+
+          Pincode
+
+          <input
+            type="text"
+            id="pincode"
+            placeholder="560001"
+            pattern="[0-9]{6}"
+            inputmode="numeric"
+            required
+          >
+        </label>
+
+
+        <!-- CITY -->
+        <label>
+
+          City
+
+          <input
+            type="text"
+            id="city"
+            placeholder="City"
+            required
+          >
+        </label>
+
+
+        <!-- STATE -->
+        <label>
+
+          State
+
+          <input
+            type="text"
+            id="state"
+            placeholder="State"
+            required
+          >
+        </label>
+
+
+        <!-- PAYMENT -->
+        <div class="payment-options">
+
+          <p>
+            Payment Method
+          </p>
+
+
+          <label class="payment-option">
+
+            <input
+              type="radio"
+              name="payment"
+              value="PREPAID"
+              checked
+            >
+
+            <span>
+              Prepaid Online (20% OFF)
+            </span>
+
+          </label>
+
+
+          <label class="payment-option">
+
+            <input
+              type="radio"
+              name="payment"
+              value="COD"
+            >
+
+            <span>
+              Cash on Delivery (10% OFF)
+            </span>
+
+          </label>
+
         </div>
-        <h2>Order summary</h2>
-        <div class="summary-line"><span>Subtotal</span><strong id="subtotal">Rs. 110</strong></div>
-        <div class="summary-line discount-line"><span id="discountLabel">Prepaid discount (20%)</span><strong id="discountAmount">- Rs. 22</strong></div>
-        <div class="summary-line"><span>Shiprocket delivery</span><strong>Rs. 55</strong></div>
-        <div class="summary-line total"><span>Total</span><strong id="total">Rs. 143</strong></div>
-        <div class="order-id-card">
-          <span>Next order ID</span>
-          <strong id="nextOrderId">SHY-000000</strong>
-        </div>
-        <p>
-          Prepaid orders receive 20% off and open PayU after saving. COD orders receive
-          10% off and are saved directly for delivery confirmation.
-        </p>
-      </aside>
-    </main>
 
-    <script src="script.js"></script>
-  </body>
+
+        <!-- STATUS -->
+        <div
+          class="checkout-status"
+          id="checkoutStatus"
+          aria-live="polite"
+        ></div>
+
+
+        <!-- BUTTON -->
+        <button
+          class="button primary full"
+          id="checkoutSubmit"
+          type="submit"
+        >
+
+          Place Order
+
+        </button>
+
+      </form>
+
+    </section>
+
+
+
+    <!-- SUMMARY -->
+    <aside class="summary-panel">
+
+      <div
+        class="summary-visual"
+        data-tilt
+      >
+
+        <div
+          id="summaryProduct"
+          class="product-3d image-product aloe-product"
+        >
+
+          <img
+            src="alo.png"
+            alt="Shayveda Product"
+          >
+
+        </div>
+
+      </div>
+
+
+      <h2>
+        Order summary
+      </h2>
+
+
+      <div id="checkoutItems"></div>
+
+
+      <div class="summary-line">
+
+        <span>
+          Subtotal
+        </span>
+
+        <strong id="subtotal">
+          Rs. 0
+        </strong>
+
+      </div>
+
+
+      <div
+        class="summary-line discount-line"
+      >
+
+        <span id="discountLabel">
+          Discount
+        </span>
+
+        <strong id="discountAmount">
+          - Rs. 0
+        </strong>
+
+      </div>
+
+
+      <div class="summary-line">
+
+        <span>
+          Delivery
+        </span>
+
+        <strong>
+          Rs. 55
+        </strong>
+
+      </div>
+
+
+      <div class="summary-line total">
+
+        <span>
+          Total
+        </span>
+
+        <strong id="total">
+          Rs. 0
+        </strong>
+
+      </div>
+
+
+      <div class="order-id-card">
+
+        <span>
+          Secure Checkout
+        </span>
+
+        <strong>
+          Razorpay Enabled
+        </strong>
+
+      </div>
+
+
+      <p>
+        Prepaid orders receive 20% off.
+        COD orders receive 10% off.
+      </p>
+
+    </aside>
+
+  </main>
+
+
+  <!-- RAZORPAY SDK -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+  <!-- YOUR MAIN JS -->
+  <script src="script.js"></script>
+
+  <!-- CHECKOUT LOGIC -->
+  <script src="checkout.js"></script>
+
+</body>
 </html>

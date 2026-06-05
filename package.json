@@ -1,0 +1,9 @@
+{
+  "name": "shayveda-website",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node scripts/start.js",
+    "backend": "npm start --prefix backend"
+  }
+}
