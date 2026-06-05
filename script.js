@@ -172,6 +172,12 @@ function addToCart(productId) {
   alert("Added to cart");
 }
 
+// Expose functions needed by inline handlers in HTML
+if (typeof window !== "undefined") {
+  window.addToCart = addToCart;
+  window.updateCartCount = updateCartCount;
+}
+
 function getStoredOrders() {
 
   try {
