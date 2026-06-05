@@ -1,5 +1,8 @@
 (function () {
-const API_BASE = "http://localhost:5000/api";
+// Use runtime-provided API base (set by hosting) or fall back to same-origin
+// relative path. This makes the frontend work on Vercel where backend may be
+// hosted separately; you can set window.__API_BASE__ at runtime if needed.
+const API_BASE = (window.__API_BASE__ || "").replace(/\/$/, "") || "";
 const CART_STORAGE_KEYS = ["shayvedaCart", "cart"];
 const DELIVERY_CHARGE = 55;
 

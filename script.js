@@ -765,9 +765,12 @@ async function trackOrder(identifier) {
     `;
   }
 
-  const response = await fetch(
-    `http://localhost:5000/api/orders/track/${encodeURIComponent(identifier)}`
-  );
+  const API_BASE = (window.__API_BASE__ || "").replace(/\/$/, "") || "";
+
+  const url =
+    (API_BASE ? `${API_BASE}/orders/track/${encodeURIComponent(identifier)}` : `/api/orders/track/${encodeURIComponent(identifier)}`);
+
+  const response = await fetch(url);
 
   const data = await response.json();
 

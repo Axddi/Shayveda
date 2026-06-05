@@ -156,7 +156,19 @@ function buildShiprocketOrderPayload(order) {
     billing_country: "India",
     billing_email: order.email || "support@shayveda.com",
     billing_phone: order.phone,
-    shipping_is_billing: true,
+  // Some Shiprocket accounts require explicit shipping fields and a false
+  // shipping_is_billing flag to accept them. Send false but include shipping
+  // fields explicitly.
+  shipping_is_billing: false,
+    shipping_customer_name: firstName,
+    shipping_last_name: lastName,
+    shipping_address: order.addressLine,
+    shipping_city: order.city,
+    shipping_pincode: order.pincode,
+    shipping_state: order.state,
+    shipping_country: "India",
+    shipping_email: order.email || "support@shayveda.com",
+    shipping_phone: order.phone,
     order_items: order.orderItems.map((item) => ({
       name: item.product.name,
       sku: item.product.slug || `SKU-${item.productId}`,
@@ -179,6 +191,12 @@ function buildShiprocketOrderPayload(order) {
 
   if (pickupLocation) {
     payload.pickup_location = pickupLocation;
+  }
+
+  const channelId = envValue("SHIPROCKET_CHANNEL_ID");
+  if (channelId) {
+    // Shiprocket expects numeric channel id in some endpoints
+    payload.channel_id = Number(channelId);
   }
 
   return payload;
@@ -253,13 +271,34 @@ async function createShiprocketOrder(order) {
     };
   }
 
-  const createResponse = await authorizedShiprocketFetch(
-    "/orders/create/adhoc",
-    {
-      method: "POST",
-      body: JSON.stringify(buildShiprocketOrderPayload(order)),
-    }
-  );
+  let createResponse;
+  try {
+    const payload = buildShiprocketOrderPayload(order);
+    // Log the payload for debugging Shiprocket failures (trim large fields)
+    try {
+      console.log("Shiprocket create payload:", JSON.stringify(payload, null, 2));
+    } catch {}
+
+    createResponse = await authorizedShiprocketFetch(
+      "/orders/create/adhoc",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
+  } catch (error) {
+    // Return structured error information instead of throwing so callers
+    // can persist API error details for debugging.
+    createResponse = {
+      error: error.message,
+      response: error.response || null,
+    };
+    // Log the API error response for debugging
+    try {
+      console.error("Shiprocket create error response:", JSON.stringify(error.response));
+    } catch (e) {}
+    // Continue - assignResponse will be empty and the caller will record the error
+  }
 
   const createIds = extractShiprocketIds(createResponse);
   let assignResponse = null;

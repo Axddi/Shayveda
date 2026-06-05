@@ -87,9 +87,24 @@ async function syncOrderToShiprocket(orderId) {
           shipping.shiprocketCourierName
             ? String(shipping.shiprocketCourierName)
             : undefined,
-        shiprocketStatus:
-          shipping.assignResponse?.error ||
-          "SHIPROCKET_ORDER_CREATED",
+        shiprocketStatus: (() => {
+          if (shipping.createResponse) {
+            if (shipping.createResponse.error) return String(shipping.createResponse.error).slice(0, 190);
+            if (shipping.createResponse.message) return String(shipping.createResponse.message).slice(0, 190);
+            if (shipping.createResponse.response) {
+              try {
+                return JSON.stringify(shipping.createResponse.response).slice(0, 190);
+              } catch {
+                return String(shipping.createResponse.response).slice(0, 190);
+              }
+            }
+            return JSON.stringify(shipping.createResponse).slice(0, 190);
+          }
+
+          if (shipping.assignResponse && shipping.assignResponse.error) return String(shipping.assignResponse.error).slice(0, 190);
+
+          return "SHIPROCKET_ORDER_CREATED";
+        })(),
         shiprocketTrackingUrl:
           shipping.shiprocketAwbCode
             ? `https://shiprocket.co/tracking/${shipping.shiprocketAwbCode}`
