@@ -14,10 +14,27 @@ const API_BASE =
     ? "http://localhost:5000/api"
     : `${window.location.origin}/api`);
 
-const normalizedApiBase =
-  API_BASE.endsWith("/api")
-    ? API_BASE
-    : `${API_BASE}/api`;
+function normalizeApiBase(base) {
+  const trimmed = String(base || "").replace(/\/$/, "");
+
+  if (!trimmed) {
+    return "";
+  }
+
+  return trimmed.endsWith("/api")
+    ? trimmed
+    : `${trimmed}/api`;
+}
+
+const apiBaseCandidates = [
+  normalizeApiBase(API_BASE),
+  !explicitApiBase && !localFrontend
+    ? "http://localhost:5000/api"
+    : "",
+].filter(Boolean);
+
+const API_BASES =
+  [...new Set(apiBaseCandidates)];
 const CART_STORAGE_KEYS = ["shayvedaCart", "cart"];
 const DELIVERY_CHARGE = 55;
 
@@ -234,31 +251,62 @@ function goToTracking(order) {
   window.location.href = "tracking.html";
 }
 
-async function postJson(url, payload) {
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+function apiUrl(base, path) {
+  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+}
 
-  const contentType =
-    response.headers.get("content-type") || "";
+async function postJson(path, payload) {
+  let lastError = null;
 
-  const data = contentType.includes("application/json")
-    ? await response.json()
-    : {
-        message:
-          (await response.text()) ||
-          "Server returned a non-JSON response",
-      };
+  for (const base of API_BASES) {
+    try {
+      const response = await fetch(apiUrl(base, path), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
-  if (!response.ok) {
-    throw new Error(data.message || "Request failed");
+      const contentType =
+        response.headers.get("content-type") || "";
+
+      const data = contentType.includes("application/json")
+        ? await response.json()
+        : {
+            message:
+              (await response.text()) ||
+              "Server returned a non-JSON response",
+          };
+
+      if (response.ok) {
+        return data;
+      }
+
+      lastError =
+        new Error(data.message || "Request failed");
+
+      const missingApiRoute =
+        response.status === 404 &&
+        !contentType.includes("application/json");
+
+      if (!missingApiRoute) {
+        lastError.stopRetry = true;
+        throw lastError;
+      }
+    } catch (error) {
+      if (error.stopRetry) {
+        throw error;
+      }
+
+      lastError = error;
+    }
   }
 
-  return data;
+  throw new Error(
+    lastError?.message ||
+      "Unable to reach checkout server. Please start the backend or configure the API URL."
+  );
 }
 
 function customerPayload() {
@@ -320,7 +368,7 @@ checkoutForm.addEventListener(
 
       if (paymentMethod === "COD") {
         const data = await postJson(
-          `${normalizedApiBase}/orders`,
+          "/orders",
           payload
         );
 
@@ -331,7 +379,7 @@ checkoutForm.addEventListener(
       }
 
       const orderData = await postJson(
-        `${normalizedApiBase}/payment/create-order`,
+        "/payment/create-order",
         {
           paymentMethod,
           items: payload.items,
@@ -355,7 +403,7 @@ checkoutForm.addEventListener(
             setStatus("Verifying payment...");
 
             const verifyData = await postJson(
-              `${normalizedApiBase}/payment/verify`,
+              "/payment/verify",
               {
                 razorpay_order_id:
                   response.razorpay_order_id,

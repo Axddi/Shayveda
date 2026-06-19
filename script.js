@@ -781,38 +781,80 @@ async function trackOrder(identifier) {
   const localFrontend =
     ["localhost", "127.0.0.1", ""].includes(window.location.hostname);
 
-  const API_BASE =
+  const apiBase =
     explicitApiBase ||
     (localFrontend
       ? "http://localhost:5000/api"
       : `${window.location.origin}/api`);
 
-  const normalizedApiBase =
-    API_BASE.endsWith("/api")
-      ? API_BASE
-      : `${API_BASE}/api`;
+  const normalizeApiBase = (base) => {
+    const trimmed =
+      String(base || "").replace(/\/$/, "");
 
-  const url =
-    `${normalizedApiBase}/orders/track/${encodeURIComponent(identifier)}`;
+    if (!trimmed) {
+      return "";
+    }
 
-  const response = await fetch(url);
+    return trimmed.endsWith("/api")
+      ? trimmed
+      : `${trimmed}/api`;
+  };
 
-  const contentType =
-    response.headers.get("content-type") || "";
+  const apiBases =
+    [
+      normalizeApiBase(apiBase),
+      !explicitApiBase && !localFrontend
+        ? "http://localhost:5000/api"
+        : "",
+    ].filter(Boolean);
 
-  const data = contentType.includes("application/json")
-    ? await response.json()
-    : {
-        message:
-          (await response.text()) ||
-          "Server returned a non-JSON response",
-      };
+  let lastError = null;
 
-  if (!response.ok) {
-    throw new Error(data.message || "Unable to track order");
+  for (const base of [...new Set(apiBases)]) {
+    const url =
+      `${base}/orders/track/${encodeURIComponent(identifier)}`;
+
+    try {
+      const response = await fetch(url);
+
+      const contentType =
+        response.headers.get("content-type") || "";
+
+      const data = contentType.includes("application/json")
+        ? await response.json()
+        : {
+            message:
+              (await response.text()) ||
+              "Server returned a non-JSON response",
+          };
+
+      if (response.ok) {
+        renderTrackingResult(data);
+        return;
+      }
+
+      lastError =
+        new Error(data.message || "Unable to track order");
+
+      const missingApiRoute =
+        response.status === 404 &&
+        !contentType.includes("application/json");
+
+      if (!missingApiRoute) {
+        lastError.stopRetry = true;
+        throw lastError;
+      }
+    } catch (error) {
+      if (error.stopRetry) {
+        throw error;
+      }
+
+      lastError = error;
+    }
   }
 
-  renderTrackingResult(data);
+  throw lastError ||
+    new Error("Unable to track order");
 }
 
 if (trackingForm) {
