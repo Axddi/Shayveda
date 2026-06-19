@@ -41,6 +41,10 @@ app.use(
   "/api/payment",
   paymentRoutes
 );
+app.use(
+  "/api",
+  paymentRoutes
+);
 
 
 const PORT = process.env.PORT || 5000;

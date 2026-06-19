@@ -16,6 +16,10 @@ router.post(
   "/verify",
   verifyPayment
 );
+router.post(
+  "/verify-payment",
+  verifyPayment
+);
 
 
 module.exports = router;

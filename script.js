@@ -784,7 +784,7 @@ async function trackOrder(identifier) {
   const apiBase =
     explicitApiBase ||
     (localFrontend
-      ? "http://localhost:5000/api"
+      ? `${window.location.origin}/api`
       : `${window.location.origin}/api`);
 
   const normalizeApiBase = (base) => {
@@ -803,7 +803,7 @@ async function trackOrder(identifier) {
   const apiBases =
     [
       normalizeApiBase(apiBase),
-      !explicitApiBase && !localFrontend
+      !explicitApiBase && localFrontend
         ? "http://localhost:5000/api"
         : "",
     ].filter(Boolean);

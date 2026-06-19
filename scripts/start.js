@@ -20,6 +20,44 @@ const mimeTypes = {
   ".ico": "image/x-icon",
 };
 
+function proxyApiRequest(request, response) {
+  const proxyRequest = http.request(
+    {
+      hostname: "localhost",
+      port: backendPort,
+      path: request.url,
+      method: request.method,
+      headers: {
+        ...request.headers,
+        host: `localhost:${backendPort}`,
+      },
+    },
+    (proxyResponse) => {
+      response.writeHead(
+        proxyResponse.statusCode || 500,
+        proxyResponse.headers
+      );
+
+      proxyResponse.pipe(response);
+    }
+  );
+
+  proxyRequest.on("error", () => {
+    response.writeHead(502, {
+      "Content-Type": "application/json; charset=utf-8",
+    });
+
+    response.end(
+      JSON.stringify({
+        message:
+          "Backend unavailable. Start the backend server and try again.",
+      })
+    );
+  });
+
+  request.pipe(proxyRequest);
+}
+
 function sendFile(response, filePath) {
   fs.readFile(filePath, (error, content) => {
     if (error) {
@@ -41,6 +79,12 @@ function createFrontendServer(frontendPort) {
   return http.createServer((request, response) => {
     const requestUrl = new URL(request.url, `http://localhost:${frontendPort}`);
     const pathname = decodeURIComponent(requestUrl.pathname);
+
+    if (pathname === "/api" || pathname.startsWith("/api/")) {
+      proxyApiRequest(request, response);
+      return;
+    }
+
     const safePath = path
       .normalize(pathname)
       .replace(/^(\.\.[/\\])+/, "");

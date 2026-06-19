@@ -11,7 +11,7 @@ const localFrontend =
 const API_BASE =
   explicitApiBase ||
   (localFrontend
-    ? "http://localhost:5000/api"
+    ? `${window.location.origin}/api`
     : `${window.location.origin}/api`);
 
 function normalizeApiBase(base) {
@@ -28,7 +28,7 @@ function normalizeApiBase(base) {
 
 const apiBaseCandidates = [
   normalizeApiBase(API_BASE),
-  !explicitApiBase && !localFrontend
+  !explicitApiBase && localFrontend
     ? "http://localhost:5000/api"
     : "",
 ].filter(Boolean);
@@ -286,6 +286,8 @@ async function postJson(path, payload) {
       lastError =
         new Error(data.message || "Request failed");
 
+      lastError.status = response.status;
+
       const missingApiRoute =
         response.status === 404 &&
         !contentType.includes("application/json");
@@ -379,20 +381,41 @@ checkoutForm.addEventListener(
       }
 
       const orderData = await postJson(
-        "/payment/create-order",
+        "/create-order",
         {
           paymentMethod,
           items: payload.items,
         }
       );
 
+      if (typeof Razorpay === "undefined") {
+        throw new Error(
+          "Razorpay checkout could not be loaded. Please check your internet connection and try again."
+        );
+      }
+
+      const razorpayOrderId =
+        orderData.order_id ||
+        orderData.razorpayOrder?.id;
+
+      if (!razorpayOrderId) {
+        throw new Error(
+          "Razorpay order could not be created. Please try again."
+        );
+      }
+
       const options = {
         key: orderData.keyId,
-        amount: orderData.razorpayOrder.amount,
-        currency: "INR",
+        amount:
+          orderData.amount ||
+          orderData.razorpayOrder?.amount,
+        currency:
+          orderData.currency ||
+          orderData.razorpayOrder?.currency ||
+          "INR",
         name: "Shayveda",
         description: "Order Payment",
-        order_id: orderData.razorpayOrder.id,
+        order_id: razorpayOrderId,
         prefill: {
           name: payload.customerName,
           email: payload.email,
@@ -403,7 +426,7 @@ checkoutForm.addEventListener(
             setStatus("Verifying payment...");
 
             const verifyData = await postJson(
-              "/payment/verify",
+              "/verify-payment",
               {
                 razorpay_order_id:
                   response.razorpay_order_id,
@@ -436,6 +459,18 @@ checkoutForm.addEventListener(
       };
 
       const razorpay = new Razorpay(options);
+
+      razorpay.on("payment.failed", function (response) {
+        const message =
+          response?.error?.description ||
+          response?.error?.reason ||
+          "Payment failed. Please try again.";
+
+        setStatus(message);
+        alert(message);
+        setSubmitting(false);
+      });
+
       razorpay.open();
     } catch (error) {
       setStatus(error.message);

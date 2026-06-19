@@ -18,6 +18,14 @@ function statusError(error) {
   return error.statusCode || 500;
 }
 
+function razorpayStatus(error) {
+  if (error.statusCode === 401) {
+    return 401;
+  }
+
+  return statusError(error);
+}
+
 // CREATE RAZORPAY ORDER
 exports.createRazorpayOrder = async (req, res) => {
 
@@ -28,16 +36,32 @@ exports.createRazorpayOrder = async (req, res) => {
       paymentMethod,
     } = req.body;
 
+    if (!envValue("RAZORPAY_KEY_ID") || !envValue("RAZORPAY_KEY_SECRET")) {
+      return res.status(500).json({
+        message:
+          "Razorpay credentials are not configured",
+      });
+    }
+
 
     const pricing = await calculateOrderPricing(
       items,
       paymentMethod
     );
 
+    const amount = Math.round(pricing.finalAmount * 100);
+
+    if (amount < 100) {
+      return res.status(400).json({
+        message:
+          "Razorpay amount must be at least 100 paise",
+      });
+    }
+
 
     // CREATE RAZORPAY ORDER
     const options = {
-      amount: Math.round(pricing.finalAmount * 100),
+      amount,
       currency: "INR",
       receipt: `receipt_${Date.now()}`,
     };
@@ -52,6 +76,9 @@ exports.createRazorpayOrder = async (req, res) => {
       message:
         "Razorpay order created",
 
+      order_id: razorpayOrder.id,
+      amount: razorpayOrder.amount,
+      currency: razorpayOrder.currency,
       razorpayOrder,
 
       pricing: {
@@ -68,7 +95,7 @@ exports.createRazorpayOrder = async (req, res) => {
 
     console.log(error);
 
-    res.status(statusError(error)).json({
+    res.status(razorpayStatus(error)).json({
       message:
         "Failed to create Razorpay order",
       error: error.message,
@@ -100,6 +127,24 @@ exports.verifyPayment = async (req, res) => {
 
     } = req.body;
 
+    if (
+      !razorpay_order_id ||
+      !razorpay_payment_id ||
+      !razorpay_signature
+    ) {
+      return res.status(400).json({
+        message:
+          "Missing Razorpay payment verification fields",
+      });
+    }
+
+    if (!envValue("RAZORPAY_KEY_SECRET")) {
+      return res.status(500).json({
+        message:
+          "Razorpay key secret is not configured",
+      });
+    }
+
     const existingOrder =
       await prisma.order.findFirst({
         where: {
@@ -112,6 +157,7 @@ exports.verifyPayment = async (req, res) => {
       return res.status(200).json({
         message:
           "Payment already verified",
+        success: true,
         order: existingOrder,
       });
     }
@@ -142,6 +188,24 @@ exports.verifyPayment = async (req, res) => {
       return res.status(400).json({
         message:
           "Invalid payment signature",
+        success: false,
+      });
+    }
+
+    if (
+      !customerName ||
+      !phone ||
+      !addressLine ||
+      !city ||
+      !state ||
+      !pincode ||
+      !Array.isArray(items) ||
+      items.length === 0
+    ) {
+      return res.status(400).json({
+        message:
+          "Missing order details after payment verification",
+        success: false,
       });
     }
 
@@ -176,6 +240,7 @@ exports.verifyPayment = async (req, res) => {
       message:
         "Payment verified successfully",
 
+      success: true,
       order,
     });
 
