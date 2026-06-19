@@ -3,7 +3,17 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "postinstall": "prisma generate --schema backend/prisma/schema.prisma",
     "start": "node scripts/start.js",
     "backend": "npm start --prefix backend"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mysql2": "^3.22.3",
+    "prisma": "^5.22.0",
+    "razorpay": "^2.9.6"
   }
 }
