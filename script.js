@@ -1,6 +1,3 @@
-(function () {
-  try {
-
 const products = {
   aloe: {
     name: "99% Aloe Vera Soothing Gel",
@@ -20,6 +17,10 @@ const products = {
     color: "beet",
   },
 };
+
+if (typeof window !== "undefined") {
+  window.products = products;
+}
 
 document.querySelectorAll("[data-tilt]").forEach((card) => {
 
@@ -104,11 +105,6 @@ function money(amount) {
 
   return `Rs. ${amount.toLocaleString("en-IN")}`;
 }
-  } catch (err) {
-    // Log any runtime error so it can be diagnosed without breaking the page
-    console.error("Frontend script error:", err);
-  }
-})();
 
 function getCart() {
 
@@ -779,14 +775,38 @@ async function trackOrder(identifier) {
     `;
   }
 
-  const API_BASE = (window.__API_BASE__ || "").replace(/\/$/, "") || "";
+  const explicitApiBase =
+    (window.__API_BASE__ || "").replace(/\/$/, "");
+
+  const localFrontend =
+    ["localhost", "127.0.0.1", ""].includes(window.location.hostname);
+
+  const API_BASE =
+    explicitApiBase ||
+    (localFrontend
+      ? "http://localhost:5000/api"
+      : `${window.location.origin}/api`);
+
+  const normalizedApiBase =
+    API_BASE.endsWith("/api")
+      ? API_BASE
+      : `${API_BASE}/api`;
 
   const url =
-    (API_BASE ? `${API_BASE}/orders/track/${encodeURIComponent(identifier)}` : `/api/orders/track/${encodeURIComponent(identifier)}`);
+    `${normalizedApiBase}/orders/track/${encodeURIComponent(identifier)}`;
 
   const response = await fetch(url);
 
-  const data = await response.json();
+  const contentType =
+    response.headers.get("content-type") || "";
+
+  const data = contentType.includes("application/json")
+    ? await response.json()
+    : {
+        message:
+          (await response.text()) ||
+          "Server returned a non-JSON response",
+      };
 
   if (!response.ok) {
     throw new Error(data.message || "Unable to track order");

@@ -4,6 +4,29 @@ const DELIVERY_CHARGE = 55;
 const PREPAID_DISCOUNT_RATE = 0.2;
 const COD_DISCOUNT_RATE = 0.1;
 
+const CATALOG_PRODUCTS = {
+  aloe: {
+    name: "99% Aloe Vera Soothing Gel",
+    slug: "aloe",
+    description:
+      "Cooling aloe vera gel for daily skin, scalp, and hair hydration.",
+    price: 110,
+    stock: 100,
+    imageUrl: "alo.png",
+    category: "Skin Care",
+  },
+  beetroot: {
+    name: "Beetroot Superfood Powder",
+    slug: "beetroot",
+    description:
+      "Botanical beetroot powder for natural glow and self-care routines.",
+    price: 399,
+    stock: 100,
+    imageUrl: "beetroot.png",
+    category: "Wellness",
+  },
+};
+
 function normalizePaymentMethod(paymentMethod) {
   return String(paymentMethod || "").toUpperCase() === "COD"
     ? "COD"
@@ -69,7 +92,7 @@ async function getProductsForItems(items) {
     });
   }
 
-  return prisma.product.findMany({
+  const products = await prisma.product.findMany({
     where:
       filters.length === 1
         ? filters[0]
@@ -77,6 +100,32 @@ async function getProductsForItems(items) {
             OR: filters,
           },
   });
+
+  const foundSlugs = new Set(
+    products.map((product) => product.slug)
+  );
+
+  const missingCatalogSlugs = slugs.filter((slug) => {
+    return CATALOG_PRODUCTS[slug] && !foundSlugs.has(slug);
+  });
+
+  if (missingCatalogSlugs.length === 0) {
+    return products;
+  }
+
+  const createdProducts = await Promise.all(
+    [...new Set(missingCatalogSlugs)].map((slug) => {
+      return prisma.product.upsert({
+        where: {
+          slug,
+        },
+        update: {},
+        create: CATALOG_PRODUCTS[slug],
+      });
+    })
+  );
+
+  return [...products, ...createdProducts];
 }
 
 async function calculateOrderPricing(items, paymentMethod) {

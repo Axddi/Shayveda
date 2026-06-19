@@ -1,9 +1,23 @@
 (function () {
   try {
-// Use runtime-provided API base (set by hosting) or fall back to same-origin
-// relative path. This makes the frontend work on Vercel where backend may be
-// hosted separately; you can set window.__API_BASE__ at runtime if needed.
-const API_BASE = (window.__API_BASE__ || "").replace(/\/$/, "") || "";
+// Use runtime-provided API base when hosting the API separately.
+// Locally, the static frontend runs on a different port from Express.
+const explicitApiBase =
+  (window.__API_BASE__ || "").replace(/\/$/, "");
+
+const localFrontend =
+  ["localhost", "127.0.0.1", ""].includes(window.location.hostname);
+
+const API_BASE =
+  explicitApiBase ||
+  (localFrontend
+    ? "http://localhost:5000/api"
+    : `${window.location.origin}/api`);
+
+const normalizedApiBase =
+  API_BASE.endsWith("/api")
+    ? API_BASE
+    : `${API_BASE}/api`;
 const CART_STORAGE_KEYS = ["shayvedaCart", "cart"];
 const DELIVERY_CHARGE = 55;
 
@@ -229,7 +243,16 @@ async function postJson(url, payload) {
     body: JSON.stringify(payload),
   });
 
-  const data = await response.json();
+  const contentType =
+    response.headers.get("content-type") || "";
+
+  const data = contentType.includes("application/json")
+    ? await response.json()
+    : {
+        message:
+          (await response.text()) ||
+          "Server returned a non-JSON response",
+      };
 
   if (!response.ok) {
     throw new Error(data.message || "Request failed");
@@ -297,7 +320,7 @@ checkoutForm.addEventListener(
 
       if (paymentMethod === "COD") {
         const data = await postJson(
-          `${API_BASE}/orders`,
+          `${normalizedApiBase}/orders`,
           payload
         );
 
@@ -308,7 +331,7 @@ checkoutForm.addEventListener(
       }
 
       const orderData = await postJson(
-        `${API_BASE}/payment/create-order`,
+        `${normalizedApiBase}/payment/create-order`,
         {
           paymentMethod,
           items: payload.items,
@@ -332,7 +355,7 @@ checkoutForm.addEventListener(
             setStatus("Verifying payment...");
 
             const verifyData = await postJson(
-              `${API_BASE}/payment/verify`,
+              `${normalizedApiBase}/payment/verify`,
               {
                 razorpay_order_id:
                   response.razorpay_order_id,
