@@ -26,6 +26,22 @@ function razorpayStatus(error) {
   return statusError(error);
 }
 
+function publicErrorMessage(error, fallback) {
+  const message = error.message || "";
+
+  if (
+    message.includes("Can't reach database server") &&
+    message.includes("localhost")
+  ) {
+    return (
+      "Database is not reachable from Vercel. " +
+      "Set DATABASE_URL in Vercel to a hosted MySQL database, not localhost."
+    );
+  }
+
+  return message || fallback;
+}
+
 // CREATE RAZORPAY ORDER
 exports.createRazorpayOrder = async (req, res) => {
 
@@ -98,7 +114,10 @@ exports.createRazorpayOrder = async (req, res) => {
     res.status(razorpayStatus(error)).json({
       message:
         "Failed to create Razorpay order",
-      error: error.message,
+      error: publicErrorMessage(
+        error,
+        "Unable to create Razorpay order"
+      ),
     });
 
   }
@@ -251,7 +270,10 @@ exports.verifyPayment = async (req, res) => {
     res.status(statusError(error)).json({
       message:
         "Payment verification failed",
-      error: error.message,
+      error: publicErrorMessage(
+        error,
+        "Unable to verify payment"
+      ),
     });
 
   }
