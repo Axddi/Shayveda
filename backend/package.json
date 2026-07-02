@@ -5,6 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon server.js",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
     "start": "node server.js"
   },
   "keywords": [],
@@ -17,7 +19,6 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "mysql2": "^3.22.3",
     "prisma": "^5.22.0",
     "razorpay": "^2.9.6"
   },
