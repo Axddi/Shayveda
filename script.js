@@ -750,7 +750,7 @@ function renderTrackingResult(data) {
         <span></span>
         <div>
           <strong>Out for delivery</strong>
-          <small>SMS update to customer</small>
+          <small>Email update to customer</small>
         </div>
       </article>
     `;
@@ -781,17 +781,11 @@ async function trackOrder(identifier) {
   const localFrontend =
     ["localhost", "127.0.0.1", ""].includes(window.location.hostname);
 
-  const apiBase =
-    explicitApiBase ||
-    (localFrontend
-      ? `${window.location.origin}/api`
-      : `${window.location.origin}/api`);
-
   const normalizeApiBase = (base) => {
     const trimmed =
       String(base || "").replace(/\/$/, "");
 
-    if (!trimmed) {
+    if (!trimmed || trimmed === "null") {
       return "";
     }
 
@@ -800,13 +794,26 @@ async function trackOrder(identifier) {
       : `${trimmed}/api`;
   };
 
-  const apiBases =
-    [
-      normalizeApiBase(apiBase),
-      !explicitApiBase && localFrontend
-        ? "http://localhost:5000/api"
-        : "",
+  const getApiBases = () => {
+    if (explicitApiBase) {
+      return [
+        normalizeApiBase(explicitApiBase),
+      ].filter(Boolean);
+    }
+
+    if (localFrontend) {
+      return [
+        normalizeApiBase(`${window.location.origin}/api`),
+        "http://localhost:5000/api",
+      ].filter(Boolean);
+    }
+
+    return [
+      normalizeApiBase(`${window.location.origin}/api`),
     ].filter(Boolean);
+  };
+
+  const apiBases = getApiBases();
 
   let lastError = null;
 
@@ -820,13 +827,23 @@ async function trackOrder(identifier) {
       const contentType =
         response.headers.get("content-type") || "";
 
-      const data = contentType.includes("application/json")
+      const isJson =
+        contentType.includes("application/json");
+
+      const data = isJson
         ? await response.json()
         : {
             message:
-              (await response.text()) ||
-              "Server returned a non-JSON response",
+              `Tracking API at ${base} returned a non-JSON response.`,
+            body: await response.text(),
           };
+
+      if (!isJson) {
+        lastError =
+          new Error(data.message);
+
+        continue;
+      }
 
       if (response.ok) {
         renderTrackingResult(data);
@@ -838,7 +855,7 @@ async function trackOrder(identifier) {
 
       const missingApiRoute =
         response.status === 404 &&
-        !contentType.includes("application/json");
+        !isJson;
 
       if (!missingApiRoute) {
         lastError.stopRetry = true;

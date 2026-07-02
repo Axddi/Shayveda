@@ -8,16 +8,10 @@ const explicitApiBase =
 const localFrontend =
   ["localhost", "127.0.0.1", ""].includes(window.location.hostname);
 
-const API_BASE =
-  explicitApiBase ||
-  (localFrontend
-    ? `${window.location.origin}/api`
-    : `${window.location.origin}/api`);
-
 function normalizeApiBase(base) {
   const trimmed = String(base || "").replace(/\/$/, "");
 
-  if (!trimmed) {
+  if (!trimmed || trimmed === "null") {
     return "";
   }
 
@@ -26,15 +20,25 @@ function normalizeApiBase(base) {
     : `${trimmed}/api`;
 }
 
-const apiBaseCandidates = [
-  normalizeApiBase(API_BASE),
-  !explicitApiBase && localFrontend
-    ? "http://localhost:5000/api"
-    : "",
-].filter(Boolean);
+function getApiBases() {
+  if (explicitApiBase) {
+    return [normalizeApiBase(explicitApiBase)].filter(Boolean);
+  }
+
+  if (localFrontend) {
+    return [
+      normalizeApiBase(`${window.location.origin}/api`),
+      "http://localhost:5000/api",
+    ].filter(Boolean);
+  }
+
+  return [
+    normalizeApiBase(`${window.location.origin}/api`),
+  ].filter(Boolean);
+}
 
 const API_BASES =
-  [...new Set(apiBaseCandidates)];
+  [...new Set(getApiBases())];
 const CART_STORAGE_KEYS = ["shayvedaCart", "cart"];
 const DELIVERY_CHARGE = 55;
 
@@ -271,13 +275,23 @@ async function postJson(path, payload) {
       const contentType =
         response.headers.get("content-type") || "";
 
-      const data = contentType.includes("application/json")
+      const isJson =
+        contentType.includes("application/json");
+
+      const data = isJson
         ? await response.json()
         : {
             message:
-              (await response.text()) ||
-              "Server returned a non-JSON response",
+              `Checkout API at ${base} returned a non-JSON response.`,
+            body: await response.text(),
           };
+
+      if (!isJson) {
+        lastError =
+          new Error(data.message);
+
+        continue;
+      }
 
       if (response.ok) {
         return data;
@@ -290,7 +304,7 @@ async function postJson(path, payload) {
 
       const missingApiRoute =
         response.status === 404 &&
-        !contentType.includes("application/json");
+        !isJson;
 
       if (!missingApiRoute) {
         lastError.stopRetry = true;

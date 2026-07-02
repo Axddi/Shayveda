@@ -1,0 +1,26 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/checkout",
+      "destination": "/checkout.html"
+    },
+    {
+      "source": "/tracking",
+      "destination": "/tracking.html"
+    },
+    {
+      "source": "/cart",
+      "destination": "/cart.html"
+    },
+    {
+      "source": "/product-aloe",
+      "destination": "/product-aloe.html"
+    },
+    {
+      "source": "/product-beetroot",
+      "destination": "/product-beetroot.html"
+    }
+  ]
+}

@@ -6,10 +6,14 @@ const {
 const {
   createShiprocketOrder,
   envValue,
+  getPickupLocations,
   isShiprocketConfigured,
   trackByAwb,
   trackByOrder,
 } = require("../services/shiprocketService");
+const {
+  sendOrderConfirmationEmail,
+} = require("../services/emailService");
 
 function createOrderNumber() {
   const stamp = new Date()
@@ -25,6 +29,32 @@ function createOrderNumber() {
 
 function statusError(error) {
   return error.statusCode || 500;
+}
+
+function requireAdminToken(req, res) {
+  const expectedToken =
+    process.env.ADMIN_API_TOKEN || "";
+
+  if (
+    !expectedToken &&
+    process.env.NODE_ENV !== "production"
+  ) {
+    return true;
+  }
+
+  const actualToken =
+    req.headers["x-admin-token"] ||
+    req.query.adminToken;
+
+  if (expectedToken && actualToken === expectedToken) {
+    return true;
+  }
+
+  res.status(401).json({
+    message: "Admin token is required",
+  });
+
+  return false;
 }
 
 async function syncOrderToShiprocket(orderId) {
@@ -185,7 +215,24 @@ async function createOrderRecord(payload, paymentStatus, paymentData = {}) {
     },
   });
 
-  return syncOrderToShiprocket(order.id);
+  const syncedOrder =
+    await syncOrderToShiprocket(order.id);
+
+  sendOrderConfirmationEmail(syncedOrder)
+    .then((result) => {
+      if (!result?.skipped) {
+        console.log(
+          `Order email sent for ${syncedOrder.orderNumber || syncedOrder.id}`
+        );
+      }
+    })
+    .catch((error) => {
+      console.error(
+        `Order email failed for ${syncedOrder.orderNumber || syncedOrder.id}: ${error.message}`
+      );
+    });
+
+  return syncedOrder;
 }
 
 
@@ -369,3 +416,70 @@ exports.trackOrder = async (req, res) => {
 
 exports.createOrderRecord = createOrderRecord;
 exports.syncOrderToShiprocket = syncOrderToShiprocket;
+
+exports.getShiprocketSetup = async (req, res) => {
+  try {
+    if (!requireAdminToken(req, res)) {
+      return;
+    }
+
+    if (!isShiprocketConfigured()) {
+      return res.json({
+        configured: false,
+        message: "Shiprocket credentials are not configured",
+      });
+    }
+
+    const pickupInfo = await getPickupLocations();
+
+    res.json({
+      configured: true,
+      pickupLocationCount:
+        pickupInfo.locations.length,
+      pickupLocations:
+        pickupInfo.locations,
+      raw: pickupInfo.raw,
+    });
+  } catch (error) {
+    res.status(statusError(error)).json({
+      message: "Failed to check Shiprocket setup",
+      error: error.message,
+      response: error.response,
+    });
+  }
+};
+
+exports.resyncOrderToShiprocket = async (req, res) => {
+  try {
+    if (!requireAdminToken(req, res)) {
+      return;
+    }
+
+    const id = Number(req.params.id);
+
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({
+        message: "Valid order id is required",
+      });
+    }
+
+    const order =
+      await syncOrderToShiprocket(id);
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found",
+      });
+    }
+
+    res.json({
+      message: "Shiprocket sync attempted",
+      order,
+    });
+  } catch (error) {
+    res.status(statusError(error)).json({
+      message: "Failed to sync Shiprocket order",
+      error: error.message,
+    });
+  }
+};

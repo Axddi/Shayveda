@@ -21,6 +21,16 @@ function isShiprocketConfigured() {
   );
 }
 
+function normalizePhone(phone) {
+  const digits = String(phone || "").replace(/\D/g, "");
+
+  if (digits.length > 10) {
+    return digits.slice(-10);
+  }
+
+  return digits;
+}
+
 async function parseResponse(response) {
   const text = await response.text();
 
@@ -116,6 +126,137 @@ function toShiprocketPaymentMethod(paymentMethod) {
     : "Prepaid";
 }
 
+function pickupLocationName() {
+  return (
+    envValue("SHIPROCKET_PICKUP_LOCATION") ||
+    envValue("SHIPROCKET_PICKUP_NAME") ||
+    "Home"
+  );
+}
+
+function readPickupLocations(data) {
+  const candidates = [
+    data?.data?.shipping_address,
+    data?.data?.recent_addresses,
+    data?.shipping_address,
+    data?.recent_addresses,
+  ];
+
+  return candidates.flatMap((candidate) => {
+    if (!candidate) {
+      return [];
+    }
+
+    return Array.isArray(candidate)
+      ? candidate
+      : [candidate];
+  });
+}
+
+async function getPickupLocations() {
+  const data = await authorizedShiprocketFetch(
+    "/settings/company/pickup"
+  );
+
+  return {
+    raw: data,
+    locations: readPickupLocations(data),
+  };
+}
+
+function pickupPayloadFromEnv() {
+  const location = pickupLocationName();
+
+  return {
+    pickup_location: location,
+    name:
+      envValue("SHIPROCKET_PICKUP_CONTACT_NAME") ||
+      envValue("SHIPROCKET_PICKUP_NAME") ||
+      location,
+    email:
+      envValue("SHIPROCKET_PICKUP_EMAIL") ||
+      envValue("SHIPROCKET_EMAIL"),
+    phone: normalizePhone(
+      envValue("SHIPROCKET_PICKUP_PHONE")
+    ),
+    address:
+      envValue("SHIPROCKET_PICKUP_ADDRESS"),
+    address_2:
+      envValue("SHIPROCKET_PICKUP_ADDRESS_2"),
+    city:
+      envValue("SHIPROCKET_PICKUP_CITY"),
+    state:
+      envValue("SHIPROCKET_PICKUP_STATE"),
+    country: "India",
+    pin_code:
+      envValue("SHIPROCKET_PICKUP_PINCODE"),
+  };
+}
+
+function hasPickupPayload(payload) {
+  return Boolean(
+    payload.pickup_location &&
+      payload.name &&
+      payload.email &&
+      payload.phone &&
+      payload.address &&
+      payload.city &&
+      payload.state &&
+      payload.pin_code
+  );
+}
+
+async function createPickupLocationFromEnv() {
+  const payload = pickupPayloadFromEnv();
+
+  if (!hasPickupPayload(payload)) {
+    const error = new Error(
+      "Shiprocket pickup address is missing. Add one in Shiprocket Settings > Pickup Address, or set SHIPROCKET_PICKUP_* env vars."
+    );
+    error.statusCode = 422;
+    error.response = {
+      requiredEnv: [
+        "SHIPROCKET_PICKUP_LOCATION",
+        "SHIPROCKET_PICKUP_CONTACT_NAME",
+        "SHIPROCKET_PICKUP_PHONE",
+        "SHIPROCKET_PICKUP_ADDRESS",
+        "SHIPROCKET_PICKUP_CITY",
+        "SHIPROCKET_PICKUP_STATE",
+        "SHIPROCKET_PICKUP_PINCODE",
+      ],
+    };
+    throw error;
+  }
+
+  return authorizedShiprocketFetch(
+    "/settings/company/addpickup",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+async function ensurePickupLocation() {
+  const pickupInfo = await getPickupLocations();
+
+  if (pickupInfo.locations.length > 0) {
+    return pickupInfo;
+  }
+
+  if (envValue("SHIPROCKET_AUTO_CREATE_PICKUP") === "true") {
+    await createPickupLocationFromEnv();
+    return getPickupLocations();
+  }
+
+  const error = new Error(
+    "Shiprocket pickup address is not configured. Add a pickup address in Shiprocket Settings > Pickup Address."
+  );
+  error.statusCode = 422;
+  error.response = pickupInfo.raw;
+  throw error;
+}
+
 function splitName(name) {
   const parts = String(name || "").trim().split(/\s+/);
 
@@ -138,7 +279,7 @@ function orderNumberForShiprocket(order) {
 
 function buildShiprocketOrderPayload(order) {
   const { firstName, lastName } = splitName(order.customerName);
-  const pickupLocation = envValue("SHIPROCKET_PICKUP_LOCATION");
+  const pickupLocation = pickupLocationName();
   const length = Number(envValue("SHIPROCKET_PACKAGE_LENGTH_CM")) || 10;
   const breadth = Number(envValue("SHIPROCKET_PACKAGE_BREADTH_CM")) || 10;
   const height = Number(envValue("SHIPROCKET_PACKAGE_HEIGHT_CM")) || 10;
@@ -155,20 +296,19 @@ function buildShiprocketOrderPayload(order) {
     billing_state: order.state,
     billing_country: "India",
     billing_email: order.email || "support@shayveda.com",
-    billing_phone: order.phone,
-  // Some Shiprocket accounts require explicit shipping fields and a false
-  // shipping_is_billing flag to accept them. Send false but include shipping
-  // fields explicitly.
-  shipping_is_billing: false,
+    billing_phone: normalizePhone(order.phone),
+    billing_address_2: "",
+    shipping_is_billing: true,
     shipping_customer_name: firstName,
     shipping_last_name: lastName,
     shipping_address: order.addressLine,
+    shipping_address_2: "",
     shipping_city: order.city,
     shipping_pincode: order.pincode,
     shipping_state: order.state,
     shipping_country: "India",
     shipping_email: order.email || "support@shayveda.com",
-    shipping_phone: order.phone,
+    shipping_phone: normalizePhone(order.phone),
     order_items: order.orderItems.map((item) => ({
       name: item.product.name,
       sku: item.product.slug || `SKU-${item.productId}`,
@@ -189,9 +329,7 @@ function buildShiprocketOrderPayload(order) {
     weight,
   };
 
-  if (pickupLocation) {
-    payload.pickup_location = pickupLocation;
-  }
+  payload.pickup_location = pickupLocation;
 
   const channelId = envValue("SHIPROCKET_CHANNEL_ID");
   if (channelId) {
@@ -273,6 +411,8 @@ async function createShiprocketOrder(order) {
 
   let createResponse;
   try {
+    await ensurePickupLocation();
+
     const payload = buildShiprocketOrderPayload(order);
     // Log the payload for debugging Shiprocket failures (trim large fields)
     try {
@@ -346,8 +486,11 @@ async function trackByOrder(orderId, channelId) {
 }
 
 module.exports = {
+  createPickupLocationFromEnv,
   createShiprocketOrder,
   envValue,
+  ensurePickupLocation,
+  getPickupLocations,
   isShiprocketConfigured,
   trackByAwb,
   trackByOrder,
