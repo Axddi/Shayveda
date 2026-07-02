@@ -259,6 +259,14 @@ function apiUrl(base, path) {
   return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
+function responseErrorMessage(data, fallback) {
+  return [
+    data?.message,
+    data?.error,
+  ].filter(Boolean).join(": ") ||
+    fallback;
+}
+
 async function postJson(path, payload) {
   let lastError = null;
 
@@ -298,7 +306,7 @@ async function postJson(path, payload) {
       }
 
       lastError =
-        new Error(data.message || "Request failed");
+        new Error(responseErrorMessage(data, "Request failed"));
 
       lastError.status = response.status;
 
