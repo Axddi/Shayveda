@@ -14,8 +14,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-
-// TEST ROUTE
 app.get("/", async (req, res) => {
   try {
     await prisma.$connect();
@@ -28,13 +26,9 @@ app.get("/", async (req, res) => {
   }
 });
 
-
-// PRODUCT ROUTES
 app.use("/api/products", productRoutes);
 app.use("/products", productRoutes);
 
-
-// CART ROUTES
 app.use("/api/cart", cartRoutes);
 app.use("/cart", cartRoutes);
 
